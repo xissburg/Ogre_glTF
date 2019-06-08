@@ -22,7 +22,7 @@ Library and Plugin to use glTF 2.0 resources with Ogre 2.1 licencied under the t
 ## Requirements
 
 
- - Ogre 2.1 built for source (lattest commit available)
+ - This fork requires Ogre 2.1 built from source from [this fork/branch](https://bitbucket.org/xissburg/ogre/src/v2-1-morph/) which supports morph animations 
  - C++14 compliant compiler (any modern-ish version of Visual Studio or GCC will do)
  
 
@@ -50,6 +50,8 @@ auto glTFLoader = gltfPluginAccessor::findPlugin()->getLoader();
 //You can creae an Item for a scene by giving the name of the GLB file to look for in the resources
 Ogre::Item* cesiumMan = glTFLoader->getModelData("CesiumMan.glb", glTFLoaderInterface::LoadFrom::ResourceManager).makeItem(smgr);
 ```
+
+In case you cloned without `--recursive`, `cd` into the `Ogre_glTF` directory and use `git submodule update --init --recursive` to download dependencies correctly.
 
 
 ## Building the source code
