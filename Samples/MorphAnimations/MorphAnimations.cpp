@@ -126,18 +126,24 @@ int main()
 	Ogre::ResourceGroupManager::getSingleton().addResourceLocation("../Media/gltfFiles.zip", "Zip");
 	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups(true);
 
-	Ogre::Item* ObjectItem		= nullptr;
-	Ogre::SceneNode* ObjectNode = nullptr;
+	Ogre::Item* blobItem	  = nullptr;
+	Ogre::SceneNode* blobNode = smgr->getRootSceneNode()->createChildSceneNode();
+
+	Ogre::Item* springItem	  = nullptr;
+	Ogre::SceneNode* springNode = smgr->getRootSceneNode()->createChildSceneNode();
 
 	//Initialize the library
 	auto gltf = std::make_unique<Ogre_glTF::glTFLoader>();
-	ObjectNode = smgr->getRootSceneNode()->createChildSceneNode();
 
 	try
 	{
 		auto model = gltf->getModelData("../Media/blob.glb", Ogre_glTF::glTFLoaderInterface::LoadFrom::FileSystem);
-		ObjectItem = model.makeItem(smgr);
-		model.transform.apply(ObjectNode);
+		blobItem = model.makeItem(smgr);
+		model.transform.apply(blobNode);
+
+		auto springModel = gltf->getModelData("../Media/spring.glb", Ogre_glTF::glTFLoaderInterface::LoadFrom::FileSystem);
+		springItem = springModel.makeItem(smgr);
+		springModel.transform.apply(springNode);
 	}
 	catch(std::exception& e)
 	{
@@ -145,7 +151,9 @@ int main()
 		return -1;
 	}
 
-	ObjectNode->attachObject(ObjectItem);
+	blobNode->attachObject(blobItem);
+	springNode->attachObject(springItem);
+	springNode->translate(1, 0, 0);
 
 	camera->setNearClipDistance(0.001f);
 	camera->setFarClipDistance(100);
@@ -175,11 +183,14 @@ int main()
 		accumulator += float(now - last) / 1000.0f;
 		last = now;
 
-        auto subItem = ObjectItem->getSubItem( 0 );
+        auto subItem = blobItem->getSubItem( 0 );
         for( int i = 0; i < subItem->getNumPoses(); ++i )
         {
             subItem->setPoseWeight(i, Ogre::Math::Sin(accumulator * (1 + i * 0.1) * 3 + i) * 0.27 );
         }
+
+		subItem = springItem->getSubItem( 0 );
+		subItem->setPoseWeight(0, (Ogre::Math::Sin(accumulator * 1.4) + 1) / 2);
 
 		root->renderOneFrame();
 		Ogre::WindowEventUtilities::messagePump();

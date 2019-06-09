@@ -168,25 +168,38 @@ Ogre::MeshPtr modelConverter::getOgreMesh()
 			subMesh->_compileBoneAssignments();
 		}
 
-		Ogre::vector<const float*>::type poseData;
+		Ogre::vector<const float*>::type positionData;
+		Ogre::vector<const float*>::type normalData;
 		size_t numVertices = 0;
 
 		for(auto& target : primitive.targets)
 		{	
-			const auto& iter = target.find("POSITION");
-			if(iter != target.end()) {
-				const auto& accessor = model.accessors[iter->second];
+			const auto& positionIter = target.find("POSITION");
+			if(positionIter != target.end()) 
+			{
+				const auto& accessor = model.accessors[positionIter->second];
 				const auto& bufferView = model.bufferViews[accessor.bufferView];
 				const auto& buffer = model.buffers[bufferView.buffer];
 				const auto& data = &buffer.data[bufferView.byteOffset];
-				poseData.push_back(reinterpret_cast<const float*>(data));
+				positionData.push_back(reinterpret_cast<const float*>(data));
 				numVertices = accessor.count;
+			}
+
+			const auto& normalIter = target.find("NORMAL");
+			if(normalIter != target.end()) 
+			{
+				const auto& accessor = model.accessors[normalIter->second];
+				const auto& bufferView = model.bufferViews[accessor.bufferView];
+				const auto& buffer = model.buffers[bufferView.buffer];
+				const auto& data = &buffer.data[bufferView.byteOffset];
+				normalData.push_back(reinterpret_cast<const float*>(data));
 			}
 		}
 
-		if(!poseData.empty())
+		if(!positionData.empty())
 		{
-			subMesh->createPoses(poseData.data(), poseData.size(), numVertices);
+			auto normalPtr = normalData.empty() ? nullptr : normalData.data();
+			subMesh->createPoses(positionData.data(), normalPtr, positionData.size(), numVertices);
 		}
 	}
 
