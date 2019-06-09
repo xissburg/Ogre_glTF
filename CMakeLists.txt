@@ -102,6 +102,10 @@ target_link_libraries(Ogre_gltf_PluginTest
 	${OGRE_HlmsPbs_LIBRARIES}
 )
 
+add_custom_target(CopyHLMS ALL
+	${CMAKE_COMMAND} -E copy_directory ${OGRE_MEDIA_DIR}/Hlms ${PROJECT_BINARY_DIR}/Media/Hlms
+)
+
 add_dependencies(Ogre_gltf_PluginTest Ogre_glTF)
 
 #target_link_libraries(Ogre_glTF_TEST_static
