@@ -121,7 +121,7 @@ int main()
 	compositor->createBasicWorkspaceDef(workspaceName, Ogre::ColourValue { 0.2f, 0.3f, 0.4f });
 	auto workspace = compositor->addWorkspace(smgr, window, camera, workspaceName, true);
 
-	declareHlmsLibrary("./Media");
+	declareHlmsLibrary("./Media/");
 
 	Ogre::ResourceGroupManager::getSingleton().addResourceLocation("../Media/gltfFiles.zip", "Zip");
 	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups(true);
@@ -129,24 +129,15 @@ int main()
 	Ogre::Item* ObjectItem		= nullptr;
 	Ogre::SceneNode* ObjectNode = nullptr;
 
-	//Ogre::Item* OtherItem;
 	//Initialize the library
 	auto gltf = std::make_unique<Ogre_glTF::glTFLoader>();
 	ObjectNode = smgr->getRootSceneNode()->createChildSceneNode();
 
-	Ogre_glTF::loaderAdapter gizmoLoader;
 	try
 	{
-		//auto adapter = gltf->loadFromFileSystem("from_gltf_export_skinned_cylinder.glb");
-		//auto adapter = gltf->loadGlbResource("CesiumMan.glb");
-
-		gizmoLoader = gltf->loadFromFileSystem("../Media/gizmo.glb");
-
-		//auto adapter = gltf->loadFromFileSystem("./Corset.glb");
-		auto model = gltf->getModelData("../Media/damagedHelmet/damagedHelmet.gltf", Ogre_glTF::glTFLoaderInterface::LoadFrom::FileSystem);
+		auto model = gltf->getModelData("../Media/blob.glb", Ogre_glTF::glTFLoaderInterface::LoadFrom::FileSystem);
 		ObjectItem = model.makeItem(smgr);
 		model.transform.apply(ObjectNode);
-		//OtherItem = adapter.getItem(smgr);
 	}
 	catch(std::exception& e)
 	{
@@ -156,18 +147,10 @@ int main()
 
 	ObjectNode->attachObject(ObjectItem);
 
-	auto gizmoNode = ObjectNode->createChildSceneNode();
-	gizmoNode->attachObject(gizmoLoader.getItem(smgr));
-
-	gizmoNode->getAttachedObject(0);
-	//auto gizmoItem = dynamic_cast<Ogre::Item*>(gizmoNode->getAttachedObject(0));
-
-	gizmoNode->setScale(1, 1, 1);
-	//ObjectNode->setOrientation(Ogre::Quaternion(Ogre::Degree(-90), Ogre::Vector3::UNIT_X));
 	camera->setNearClipDistance(0.001f);
 	camera->setFarClipDistance(100);
-	camera->setPosition(2.5f, 0, 2.5f);
-	camera->lookAt({ 0, 1, 0 });
+	camera->setPosition(2.5f, 0.5f, 2.5f);
+	camera->lookAt({ 0, 0, 0 });
 	camera->setAutoAspectRatio(true);
 
 	auto light = smgr->createLight();
@@ -182,38 +165,21 @@ int main()
 	light->setDirection(Ogre::Vector3 { +1, +1, +0.5f });
 	light->setPowerScale(5);
 
-	auto skeleton = ObjectItem->getSkeletonInstance();
-
-	Ogre::SkeletonAnimation* anim = nullptr;
-	Ogre::Bone* bone			  = nullptr;
-
-	auto plugins = root->getInstalledPlugins();
-
-
-	if(skeleton)
-	{
-		bone				= skeleton->getBone(1);
-		auto& animationList = skeleton->getAnimations();
-		if(!animationList.empty())
-		{
-			const auto name = animationList[0].getName();
-			anim			= skeleton->getAnimation(name);
-		}
-
-		if(anim)
-		{
-			anim->setEnabled(true);
-			anim->setLoop(true);
-		}
-	}
-
 	auto last = root->getTimer()->getMilliseconds();
 	auto now  = last;
+    auto accumulator = 0.f;
+
 	while(!window->isClosed())
 	{
 		now = root->getTimer()->getMilliseconds();
-		if(anim) anim->addTime(float(now - last) / 1000.0f);
+		accumulator += float(now - last) / 1000.0f;
 		last = now;
+
+        auto subItem = ObjectItem->getSubItem( 0 );
+        for( int i = 0; i < subItem->getNumPoses(); ++i )
+        {
+            subItem->setPoseWeight(i, Ogre::Math::Sin(accumulator * (1 + i * 0.1) * 3 + i) * 0.27 );
+        }
 
 		root->renderOneFrame();
 		Ogre::WindowEventUtilities::messagePump();

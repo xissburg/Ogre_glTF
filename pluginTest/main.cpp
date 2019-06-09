@@ -129,7 +129,7 @@ int main()
 
 	//Load workspace and hlms
 	auto workspace = setupCompositor(root.get(), window, smgr, camera);
-	declareHlmsLibrary("./");
+	declareHlmsLibrary("./Media");
 
 	//Init resources
 	ResourceGroupManager::getSingleton().addResourceLocation("gltfFiles.zip", "Zip");
