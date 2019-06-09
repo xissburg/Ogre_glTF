@@ -168,26 +168,25 @@ Ogre::MeshPtr modelConverter::getOgreMesh()
 			subMesh->_compileBoneAssignments();
 		}
 
-		Ogre::vector<float*>::type poseData;
+		Ogre::vector<const float*>::type poseData;
 		size_t numVertices = 0;
 
 		for(auto& target : primitive.targets)
 		{	
 			const auto& iter = target.find("POSITION");
 			if(iter != target.end()) {
-				auto& accessor = model.accessors[iter->second];
-				auto& bufferView = model.bufferViews[accessor.bufferView];
-				auto& buffer = model.buffers[bufferView.buffer];
+				const auto& accessor = model.accessors[iter->second];
+				const auto& bufferView = model.bufferViews[accessor.bufferView];
+				const auto& buffer = model.buffers[bufferView.buffer];
 				const auto& data = &buffer.data[bufferView.byteOffset];
-				auto& count = accessor.count;
-				numVertices = count;
-				poseData.push_back(reinterpret_cast<float*>(const_cast<unsigned char*>(data)));
+				poseData.push_back(reinterpret_cast<const float*>(data));
+				numVertices = accessor.count;
 			}
 		}
 
 		if(!poseData.empty())
 		{
-			subMesh->createPoses(poseData, numVertices);
+			subMesh->createPoses(poseData.data(), poseData.size(), numVertices);
 		}
 	}
 
