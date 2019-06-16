@@ -33,6 +33,11 @@ const char D3D11_RENDER_PLUGIN[] = "RenderSystem_Direct3D11";
 #endif
 #endif
 
+#define Ogre_glTF_STATIC
+#ifdef Ogre_glTF_STATIC
+#include <RenderSystems/GL3Plus/OgreGL3PlusPlugin.h>
+#endif
+
 #ifdef _WIN32
 #define NOMINMAX
 #include <windows.h>
@@ -96,9 +101,17 @@ int main()
 	auto root = std::make_unique<Ogre::Root>();
 	Ogre::LogManager::getSingleton().setLogDetail(Ogre::LoggingLevel::LL_BOREME);
 
+#ifdef Ogre_glTF_STATIC
+#if __linux__
+    Ogre::String renderSystemName("GL");
+    auto glPlugin = std::unique_ptr<Ogre::GL3PlusPlugin>(OGRE_NEW Ogre::GL3PlusPlugin());
+    root->installPlugin(glPlugin.get());
+#endif
+#else
 	root->loadPlugin(GL_RENDER_PLUGIN);
 #ifdef _WIN32
 	root->loadPlugin(D3D11_RENDER_PLUGIN);
+#endif
 #endif
 	root->showConfigDialog();
 	root->getRenderSystem()->setConfigOption("FSAA", "16");
@@ -126,24 +139,19 @@ int main()
 	Ogre::ResourceGroupManager::getSingleton().addResourceLocation("../Media/gltfFiles.zip", "Zip");
 	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups(true);
 
-	Ogre::Item* blobItem	  = nullptr;
-	Ogre::SceneNode* blobNode = smgr->getRootSceneNode()->createChildSceneNode();
-
-	Ogre::Item* springItem	  = nullptr;
-	Ogre::SceneNode* springNode = smgr->getRootSceneNode()->createChildSceneNode();
+	Ogre::SceneNode* blobNode = nullptr;
+	Ogre::SceneNode* springNode = nullptr;
 
 	//Initialize the library
 	auto gltf = std::make_unique<Ogre_glTF::glTFLoader>();
 
 	try
 	{
-		auto model = gltf->getModelData("../Media/blob.glb", Ogre_glTF::glTFLoaderInterface::LoadFrom::FileSystem);
-		blobItem = model.makeItem(smgr);
-		model.transform.apply(blobNode);
+		auto loader = gltf->loadFromFileSystem("../Media/blob.glb");
+		blobNode = loader.getFirstSceneNode(smgr);
 
-		auto springModel = gltf->getModelData("../Media/spring.glb", Ogre_glTF::glTFLoaderInterface::LoadFrom::FileSystem);
-		springItem = springModel.makeItem(smgr);
-		springModel.transform.apply(springNode);
+		auto springLoader = gltf->loadFromFileSystem("../Media/spring.glb");
+		springNode = springLoader.getFirstSceneNode(smgr);
 	}
 	catch(std::exception& e)
 	{
@@ -151,8 +159,6 @@ int main()
 		return -1;
 	}
 
-	blobNode->attachObject(blobItem);
-	springNode->attachObject(springItem);
 	springNode->translate(1, 0, 0);
 
 	camera->setNearClipDistance(0.001f);
@@ -183,13 +189,15 @@ int main()
 		accumulator += float(now - last) / 1000.0f;
 		last = now;
 
-        auto subItem = blobItem->getSubItem( 0 );
+		auto item = static_cast<Ogre::Item*>(blobNode->getAttachedObject(0));
+        auto subItem = item->getSubItem(0);
         for( int i = 0; i < subItem->getNumPoses(); ++i )
         {
             subItem->setPoseWeight(i, Ogre::Math::Sin(accumulator * (1 + i * 0.1) * 3 + i) * 0.27 );
         }
 
-		subItem = springItem->getSubItem( 0 );
+		item = static_cast<Ogre::Item*>(springNode->getAttachedObject(0));
+		subItem = item->getSubItem(0);
 		subItem->setPoseWeight(0, (Ogre::Math::Sin(accumulator * 1.4) + 1) / 2);
 
 		root->renderOneFrame();

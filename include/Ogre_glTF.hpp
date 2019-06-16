@@ -53,12 +53,6 @@ namespace Ogre_glTF
 
 		///location where to load the data
 		enum class LoadFrom { FileSystem, ResourceManager };
-
-		///Get the model data
-		///\param modelName name of the resource being loaded
-		///\param loadLocation flag that signal if the model is loaded directly from the filesystem, or from Ogre's resource manager
-		virtual ModelInformation getModelData(const std::string& modelName, LoadFrom loadLocation) = 0;
-
 	};
 
 	///Class that hold the loaded content of a glTF file and that can create Ogre objects from it
@@ -87,9 +81,6 @@ namespace Ogre_glTF
 		///Deleted assignment constructor : non copyable class
 		loaderAdapter& operator=(const loaderAdapter&) = delete;
 
-		///Return the mesh loaded from the glTF file
-		Ogre::MeshPtr getMesh() const;
-
 		///Return one of the datablocks loaded from the gltf file.
 		///\param index of the datablocks used. In a multi-material file, it should be one different per primitive (submesh).
 		Ogre::HlmsDatablock* getDatablock(size_t index = 0) const;
@@ -97,12 +88,11 @@ namespace Ogre_glTF
 		///Return the number of datablock stored
 		size_t getDatablockCount();
 
-		///Get the local transform to apply to the node to align the model with what you would expect.
-		ModelInformation::ModelTransform getTransform();
-
 		///Construct an item for this object
 		/// \param smgr pointer to the scene manager where we are creating the item
-		Ogre::Item* getItem(Ogre::SceneManager* smgr) const;
+		Ogre::SceneNode* getFirstSceneNode(Ogre::SceneManager* smgr) const;
+
+		Ogre::SceneNode* getSceneNode(size_t index, Ogre::SceneNode* parentSceneNode, Ogre::SceneManager* smgr) const;
 
 		///Move constructor : object is movable
 		/// \param other object to move
@@ -147,9 +137,6 @@ namespace Ogre_glTF
 
 		///Load a GLB from Ogre's resource manager
 		loaderAdapter loadGlbResource(const std::string& name) const;
-
-		///Get the model data. Contains everything you need to create object from the model contained on the glTF asset
-		ModelInformation getModelData(const std::string& modelName, LoadFrom loadLocation) override;
 
 		///Deleted copy constructor
 		glTFLoader(const glTFLoader&) = delete;

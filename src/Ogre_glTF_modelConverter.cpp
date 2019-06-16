@@ -57,12 +57,36 @@ Ogre::VertexBufferPackedVec modelConverter::constructVertexBuffer(const std::vec
 	return vec;
 }
 
-//TODO make this method make the mesh id. Enumerate the meshes in the file before blindlessly loading the first one
-Ogre::MeshPtr modelConverter::getOgreMesh()
+Ogre::MeshPtr modelConverter::getOgreMesh(const Ogre::String& name)
 {
-	OgreLog("Default scene" + std::to_string(model.defaultScene));
-	const auto mainMeshIndex = (model.defaultScene != 0 ? model.nodes[model.scenes[model.defaultScene].nodes.front()].mesh : 0);
-	const auto& mesh		 = model.meshes[mainMeshIndex];
+	if(name.empty())
+	{
+		if(!model.meshes.empty()) {
+			return getOgreMesh(model.meshes.front());
+		}
+		else
+		{
+			return Ogre::MeshPtr();
+		}
+	}
+
+	for(const auto& mesh : model.meshes) {
+		if(!mesh.name.empty() && mesh.name == name) {
+			return getOgreMesh(mesh);
+		}
+	}
+	
+	return Ogre::MeshPtr();
+}
+
+Ogre::MeshPtr modelConverter::getOgreMesh(size_t index)
+{
+	assert(index < model.meshes.size());
+	return getOgreMesh(model.meshes[index]);
+}
+
+Ogre::MeshPtr modelConverter::getOgreMesh(const tinygltf::Mesh& mesh)
+{
 	Ogre::Aabb boundingBox;
 	OgreLog("Found mesh " + mesh.name + " in glTF file");
 
@@ -232,7 +256,7 @@ void modelConverter::debugDump() const
 }
 
 bool modelConverter::hasSkins() const { return !model.skins.empty(); }
-
+/*
 ModelInformation::ModelTransform modelConverter::getTransform()
 {
 	ModelInformation::ModelTransform trans;
@@ -271,7 +295,7 @@ ModelInformation::ModelTransform modelConverter::getTransform()
 	}
 
 	return trans;
-}
+}*/
 
 Ogre::VaoManager* modelConverter::getVaoManager()
 {

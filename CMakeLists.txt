@@ -14,16 +14,29 @@ endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
 
+option(Ogre_glTF_STATIC "Static build" FALSE)
+
+if (Ogre_glTF_STATIC)
+  add_definitions(-DOgre_glTF_STATIC)
+  set(Ogre_glTF_LIB_TYPE STATIC)
+  set(OGRE_STATIC TRUE)
+  set(Ogre_glTF_LIB_SUFFIX "Static")
+else ()
+  set(Ogre_glTF_LIB_TYPE SHARED)
+  set(Ogre_glTF_LIB_SUFFIX "")
+endif ()
+
 #get Ogre from your system. May need to set some variable for Windows folks
 find_package(OGRE COMPONENTS HlmsPbs REQUIRED)
 file(GLOB librarySources ./src/*.cpp ./src/private_headers/*.hpp ./include/*.hpp)
 file(GLOB testSources ./test/*.cpp ./test/*.hpp ./include/*.hpp)
 file(GLOB pluginTestSources ./pluginTest/*.cpp ./pluginTest/*.hpp ./include/*.hpp)
 
-add_library(Ogre_glTF SHARED ${librarySources})
-#add_library(Ogre_glTF_static STATIC ${librarySources})
+add_library(${PROJECT_NAME} ${Ogre_glTF_LIB_TYPE} ${librarySources})
 
-target_compile_definitions(Ogre_glTF PUBLIC Ogre_glTF_DLL_EXPORT_CONFIG_ON)
+target_compile_definitions(${PROJECT_NAME} PUBLIC Ogre_glTF_DLL_EXPORT_CONFIG_ON)
+
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME}${Ogre_glTF_LIB_SUFFIX})
 
 if(MSVC)
 	add_executable(Ogre_glTF_TEST WIN32 ${testSources})
@@ -92,15 +105,37 @@ target_link_libraries(Ogre_glTF
 target_link_libraries(Ogre_glTF_TEST
 	${OGRE_LIBRARIES}
 	${OGRE_HlmsPbs_LIBRARIES}
-
-    #the library we just built
+	#the library we just built
 	Ogre_glTF
 )
 
+if (Ogre_glTF_STATIC AND UNIX AND NOT APPLE)
+	target_link_libraries(Ogre_glTF_TEST
+		${OGRE_RenderSystem_GL3Plus_LIBRARIES}
+        dl
+        pthread
+        Xt
+        X11
+        Xaw
+        Xrandr
+	)
+endif ()
+
 target_link_libraries(Ogre_gltf_PluginTest
-	${OGRE_LIBRARIES}
 	${OGRE_HlmsPbs_LIBRARIES}
+	${OGRE_LIBRARIES}
 )
+
+if (Ogre_glTF_STATIC AND UNIX AND NOT APPLE)
+    target_link_libraries(Ogre_gltf_PluginTest
+        dl
+        pthread
+        Xt
+        X11
+        Xaw
+        Xrandr
+	)
+endif ()
 
 add_dependencies(Ogre_gltf_PluginTest Ogre_glTF)
 
