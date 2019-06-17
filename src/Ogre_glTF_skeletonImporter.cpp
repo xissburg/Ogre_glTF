@@ -17,7 +17,9 @@ void skeletonImporter::addChidren(const std::vector<int>& childs, Ogre::v1::OldB
 
 	for(auto child : childs)
 	{
-		if(model.nodes[child].mesh >= 0)
+		const auto& node = model.nodes[child];
+		
+		if(node.mesh >= 0)
 		{
 			// child is a mesh
 			continue;
@@ -26,18 +28,30 @@ void skeletonImporter::addChidren(const std::vector<int>& childs, Ogre::v1::OldB
 		auto bone = skeleton->getBone(nodeToJointMap[child]);
 		if(!bone) { throw InitError("could not get bone " + std::to_string(bone->getHandle())); }
 
+		if(!node.translation.empty())
+			bone->setPosition(node.translation[0], node.translation[1], node.translation[2]);
+
+		if(!node.rotation.empty())
+			bone->setOrientation(node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2]);
+
+		if(!node.scale.empty())
+			bone->setScale(node.scale[0], node.scale[1], node.scale[2]);
+
+		if(!node.matrix.empty())
+		{
+			std::array<Ogre::Real, 4 * 4> matrixArray { 0 };
+			internal_utils::container_double_to_real(node.matrix, matrixArray);
+			Ogre::Matrix4 matrix { matrixArray.data() };
+			Ogre::Vector3 position;
+			Ogre::Quaternion orientation;
+			Ogre::Vector3 scale;
+			matrix.transpose().decomposition(position, scale, orientation);
+			bone->setPosition(position);
+			bone->setOrientation(orientation);
+			bone->setScale(scale);
+		}
+
 		parent->addChild(bone);
-
-		auto bindMatrix = bindMatrices[nodeToJointMap[child]];
-
-		Ogre::Vector3 translation, scale;
-		Ogre::Quaternion rotation;
-
-		bindMatrix.decomposition(translation, scale, rotation);
-
-		bone->setOrientation(parent->convertWorldToLocalOrientation(rotation));
-		bone->setPosition(parent->convertWorldToLocalPosition(translation));
-		bone->setScale(parent->_getDerivedScale() / scale);
 
 		addChidren(model.nodes[child].children, bone);
 	}
@@ -450,8 +464,8 @@ Ogre::v1::SkeletonPtr skeletonImporter::getSkeleton(size_t index)
 		//Create bone with index "i"
 		auto bone = skeleton->createBone(!name.empty() ? name : skeletonName + std::to_string(i), i);
 
-		if(std::find(allChildren.begin(), allChildren.end(), i) == allChildren.end()) {
-			rootBones.push_back(i);
+		if(std::find(allChildren.begin(), allChildren.end(), jointNode) == allChildren.end()) {
+			rootBones.push_back(jointNode);
 		}
 	}
 

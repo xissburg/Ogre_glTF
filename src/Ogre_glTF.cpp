@@ -147,18 +147,23 @@ Ogre::SceneNode* loaderAdapter::getSceneNode(size_t index, Ogre::SceneNode* pare
 		auto skeletonInstance = item->getSkeletonInstance();
 		if(skeletonInstance)
 		{
+			// Find all root bones. Collect all children of all nodes in the skin and then find
+			// all nodes in the skin that are not in the set of children. Those are all nodes
+			// that don't have a parent because they're not a child of any other node. 
 			std::vector<int> rootBones;
 			std::vector<int> allChildren;
 			const auto& skin = pimpl->model.skins[node.skin];
+
 			for(const auto& nodeIndex : skin.joints)
 			{
 				const auto& node = pimpl->model.nodes[nodeIndex];
 				allChildren.insert(allChildren.end(), node.children.begin(), node.children.end());
 			}
-			for(int i = 0; i < skin.joints.size(); ++i)
+
+			for(const auto& nodeIndex : skin.joints)
 			{
-				if(std::find(allChildren.begin(), allChildren.end(), i) == allChildren.end()) {
-					rootBones.push_back(i);
+				if(std::find(allChildren.begin(), allChildren.end(), nodeIndex) == allChildren.end()) {
+					rootBones.push_back(nodeIndex);
 				}
 			}
 
@@ -189,29 +194,31 @@ void loaderAdapter::createTagPoints(int boneIndex, Ogre::SkeletonInstance* skele
 		{
 			auto tagPoint = smgr->createTagPoint();
 			tagPoint->setName(childNode.name);
+
+			Ogre::Vector3 position;
+			Ogre::Quaternion orientation;
+			Ogre::Vector3 scale(1);
 			
 			if(!childNode.translation.empty())
-				tagPoint->setPosition(childNode.translation[0], childNode.translation[1], childNode.translation[2]);
+				position = Ogre::Vector3(childNode.translation[0], childNode.translation[1], childNode.translation[2]);
 
 			if(!childNode.rotation.empty())
-				tagPoint->setOrientation(childNode.rotation[3], childNode.rotation[0], childNode.rotation[1], childNode.rotation[2]);
+				orientation = Ogre::Quaternion(childNode.rotation[3], childNode.rotation[0], childNode.rotation[1], childNode.rotation[2]);
 
 			if(!childNode.scale.empty())
-				tagPoint->setScale(childNode.scale[0], childNode.scale[1], childNode.scale[2]);
+				scale = Ogre::Vector3(childNode.scale[0], childNode.scale[1], childNode.scale[2]);
 
 			if(!childNode.matrix.empty())
 			{
 				std::array<Ogre::Real, 4 * 4> matrixArray { 0 };
 				internal_utils::container_double_to_real(childNode.matrix, matrixArray);
 				Ogre::Matrix4 matrix { matrixArray.data() };
-				Ogre::Vector3 position;
-				Ogre::Quaternion orientation;
-				Ogre::Vector3 scale;
 				matrix.transpose().decomposition(position, scale, orientation);
-				tagPoint->setPosition(position);
-				tagPoint->setOrientation(orientation);
-				tagPoint->setScale(scale);
 			}
+
+			tagPoint->setPosition(position);
+			tagPoint->setOrientation(orientation);
+			tagPoint->setScale(scale);
 
 			auto ogreMesh = pimpl->modelConv.getOgreMesh(childNode.mesh);
 
