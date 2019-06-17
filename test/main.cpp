@@ -139,8 +139,7 @@ int main()
 	Ogre::ResourceGroupManager::getSingleton().addResourceLocation("../Media/gltfFiles.zip", "Zip");
 	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups(true);
 
-	Ogre::Item* ObjectItem		= nullptr;
-	Ogre::SceneNode* ObjectNode = nullptr;
+	Ogre::SceneNode* objectNode = nullptr;
 
 	//Ogre::Item* OtherItem;
 	//Initialize the library
@@ -156,7 +155,7 @@ int main()
 
 		//auto adapter = gltf->loadFromFileSystem("./Corset.glb");
 		auto loader = gltf->loadFromFileSystem("/home/xissburg/Desktop/buggy_v2.gltf");
-		ObjectNode = loader.getFirstSceneNode(smgr);
+		objectNode = loader.getFirstSceneNode(smgr);
 	}
 	catch(std::exception& e)
 	{
@@ -174,8 +173,8 @@ int main()
 	//ObjectNode->setOrientation(Ogre::Quaternion(Ogre::Degree(-90), Ogre::Vector3::UNIT_X));
 	camera->setNearClipDistance(0.001f);
 	camera->setFarClipDistance(100);
-	camera->setPosition(2.5f, 0, 2.5f);
-	camera->lookAt({ 0, 1, 0 });
+	camera->setPosition(0.2f, 0.8f, 2.5f);
+	camera->lookAt({ 0, 0.2f, 0 });
 	camera->setAutoAspectRatio(true);
 
 	auto light = smgr->createLight();
@@ -189,8 +188,8 @@ int main()
 	light->setType(Ogre::Light::LT_DIRECTIONAL);
 	light->setDirection(Ogre::Vector3 { +1, +1, +0.5f });
 	light->setPowerScale(5);
-/*
-	ObjectItem = static_cast<Ogre::Item*>(ObjectNode->getAttachedObject(0));
+
+	/*ObjectItem = static_cast<Ogre::Item*>(ObjectNode->getAttachedObject(0));
 	auto skeleton = ObjectItem->getSkeletonInstance();
 
 	Ogre::SkeletonAnimation* anim = nullptr;

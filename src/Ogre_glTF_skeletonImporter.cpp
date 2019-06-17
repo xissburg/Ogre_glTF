@@ -17,6 +17,12 @@ void skeletonImporter::addChidren(const std::vector<int>& childs, Ogre::v1::OldB
 
 	for(auto child : childs)
 	{
+		if(model.nodes[child].mesh >= 0)
+		{
+			// child is a mesh
+			continue;
+		}
+
 		auto bone = skeleton->getBone(nodeToJointMap[child]);
 		if(!bone) { throw InitError("could not get bone " + std::to_string(bone->getHandle())); }
 
@@ -37,7 +43,7 @@ void skeletonImporter::addChidren(const std::vector<int>& childs, Ogre::v1::OldB
 	}
 }
 
-void skeletonImporter::loadBoneHierarchy(const tinygltf::Skin& skin, int boneIndex)
+void skeletonImporter::loadBoneHierarchy(int boneIndex)
 {
 	const auto& node = model.nodes[boneIndex];
 	Ogre::v1::OldBone* rootBone = skeleton->getBone(nodeToJointMap[boneIndex]);
@@ -451,7 +457,7 @@ Ogre::v1::SkeletonPtr skeletonImporter::getSkeleton(size_t index)
 
 	for(int boneIndex : rootBones)
 	{
-		loadBoneHierarchy(skin, boneIndex);
+		loadBoneHierarchy(boneIndex);
 	}
 	skeleton->setBindingPose();
 	loadSkeletonAnimations(skin, skeletonName);

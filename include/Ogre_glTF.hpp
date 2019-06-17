@@ -94,6 +94,8 @@ namespace Ogre_glTF
 
 		Ogre::SceneNode* getSceneNode(size_t index, Ogre::SceneNode* parentSceneNode, Ogre::SceneManager* smgr) const;
 
+		void createTagPoints(int boneIndex, Ogre::SkeletonInstance* skeletonInstance, Ogre::SceneManager* smgr) const;
+
 		///Move constructor : object is movable
 		/// \param other object to move
 		loaderAdapter(loaderAdapter&& other) noexcept;

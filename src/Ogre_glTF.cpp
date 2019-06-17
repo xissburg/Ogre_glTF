@@ -16,6 +16,7 @@
 
 #include <OgreItem.h>
 #include <OgreMesh2.h>
+#include <Animation/OgreTagPoint.h>
 
 using namespace Ogre_glTF;
 
@@ -76,13 +77,6 @@ Ogre::SceneNode* loaderAdapter::getFirstSceneNode(Ogre::SceneManager* smgr) cons
 				return getSceneNode(i, smgr->getRootSceneNode(), smgr);
 			}
 		}
-
-		/*
-		Ogre::MeshPtr Mesh = getMesh();
-
-		auto Item = smgr->createItem(Mesh);
-		for(size_t i = 0; i < Item->getNumSubItems(); ++i) { Item->getSubItem(i)->setDatablock(getDatablock(i)); }
-		return Item;*/
 	}
 
 	return nullptr;
@@ -103,6 +97,7 @@ Ogre::SceneNode* loaderAdapter::getSceneNode(size_t index, Ogre::SceneNode* pare
 	}
 
 	auto sceneNode = parentSceneNode->createChildSceneNode();
+	sceneNode->setName(node.name);
 	
 	if(!node.translation.empty())
 		sceneNode->setPosition(node.translation[0], node.translation[1], node.translation[2]);
@@ -146,6 +141,31 @@ Ogre::SceneNode* loaderAdapter::getSceneNode(size_t index, Ogre::SceneNode* pare
 			item->getSubItem(i)->setDatablock(getDatablock(i)); 
 		}
 		sceneNode->attachObject(item);
+
+		// Add tag points
+		auto skeletonInstance = item->getSkeletonInstance();
+		if(skeletonInstance)
+		{
+			std::vector<int> rootBones;
+			std::vector<int> allChildren;
+			const auto& skin = pimpl->model.skins[node.skin];
+			for(const auto& nodeIndex : skin.joints)
+			{
+				const auto& node = pimpl->model.nodes[nodeIndex];
+				allChildren.insert(allChildren.end(), node.children.begin(), node.children.end());
+			}
+			for(int i = 0; i < skin.joints.size(); ++i)
+			{
+				if(std::find(allChildren.begin(), allChildren.end(), i) == allChildren.end()) {
+					rootBones.push_back(i);
+				}
+			}
+
+			for(int boneIndex : rootBones)
+			{
+				createTagPoints(boneIndex, skeletonInstance, smgr);
+			}
+		}
 	}
 
 	for(const auto& child : node.children)
@@ -154,6 +174,75 @@ Ogre::SceneNode* loaderAdapter::getSceneNode(size_t index, Ogre::SceneNode* pare
 	}
 
 	return sceneNode;
+}
+
+void loaderAdapter::createTagPoints(int boneIndex, Ogre::SkeletonInstance* skeletonInstance, Ogre::SceneManager* smgr) const
+{
+	const auto& boneNode = pimpl->model.nodes[boneIndex];
+
+	for(auto child : boneNode.children)
+	{
+		const auto& childNode = pimpl->model.nodes[child];
+
+		if(childNode.mesh >= 0)
+		{
+			auto tagPoint = smgr->createTagPoint();
+			tagPoint->setName(childNode.name);
+			
+			if(!childNode.translation.empty())
+				tagPoint->setPosition(childNode.translation[0], childNode.translation[1], childNode.translation[2]);
+
+			if(!childNode.rotation.empty())
+				tagPoint->setOrientation(childNode.rotation[3], childNode.rotation[0], childNode.rotation[1], childNode.rotation[2]);
+
+			if(!childNode.scale.empty())
+				tagPoint->setScale(childNode.scale[0], childNode.scale[1], childNode.scale[2]);
+
+			if(!childNode.matrix.empty())
+			{
+				std::array<Ogre::Real, 4 * 4> matrixArray { 0 };
+				internal_utils::container_double_to_real(childNode.matrix, matrixArray);
+				Ogre::Matrix4 matrix { matrixArray.data() };
+				Ogre::Vector3 position;
+				Ogre::Quaternion orientation;
+				Ogre::Vector3 scale;
+				matrix.transpose().decomposition(position, scale, orientation);
+				tagPoint->setPosition(position);
+				tagPoint->setOrientation(orientation);
+				tagPoint->setScale(scale);
+			}
+
+			auto mesh = pimpl->modelConv.getOgreMesh(childNode.mesh);
+
+			if(childNode.skin >= 0)
+			{
+				auto skeleton = this->pimpl->skeletonImp.getSkeleton(childNode.skin);
+				if(skeleton)
+				{
+					mesh->_notifySkeleton(skeleton);
+				}
+			}
+
+			auto item = smgr->createItem(mesh);
+			for(size_t i = 0; i < item->getNumSubItems(); ++i) 
+			{ 
+				item->getSubItem(i)->setDatablock(getDatablock(i)); 
+			}
+			tagPoint->attachObject(item);
+
+			auto parentBone = skeletonInstance->getBone(boneNode.name);
+			parentBone->addTagPoint(tagPoint);
+
+			for(const auto& childOfChild : childNode.children)
+			{
+				getSceneNode(childOfChild, tagPoint, smgr);
+			}
+		}
+		else
+		{
+			createTagPoints(child, skeletonInstance, smgr);
+		}
+	}
 }
 
 Ogre::HlmsDatablock* loaderAdapter::getDatablock(size_t index) const { return pimpl->materialLoad.getDatablock(index); }

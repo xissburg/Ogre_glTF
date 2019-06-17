@@ -30,7 +30,7 @@ namespace Ogre_glTF
 		/// \param skin tinigltf skin object we are loading
 		/// \param rootBone a freshly created bone object from an Ogre::SkeletonPtr
 		/// \param name Name of the skeleton we are loading
-		void loadBoneHierarchy(const tinygltf::Skin& skin, int boneIndex);
+		void loadBoneHierarchy(int boneIndex);
 
 		///Represent a keyframe as laded from tinygltf, but converted to Ogre objects
 		struct keyFrame
