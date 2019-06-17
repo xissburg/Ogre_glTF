@@ -139,7 +139,12 @@ Ogre::SceneNode* loaderAdapter::getSceneNode(size_t index, Ogre::SceneNode* pare
 		const auto& mesh = pimpl->model.meshes[node.mesh];
 		for(size_t i = 0; i < mesh.primitives.size(); ++i) 
 		{ 
-			item->getSubItem(i)->setDatablock(getDatablock(mesh.primitives[i].material)); 
+			auto subItem = item->getSubItem(i);
+			subItem->setDatablock(getDatablock(mesh.primitives[i].material));
+			if(!mesh.weights.empty())
+			{
+				subItem->setPoseWeight(i, mesh.weights[i]);
+			}
 		}
 		sceneNode->attachObject(item);
 
@@ -235,7 +240,12 @@ void loaderAdapter::createTagPoints(int boneIndex, Ogre::SkeletonInstance* skele
 			const auto& mesh = pimpl->model.meshes[childNode.mesh];
 			for(size_t i = 0; i < mesh.primitives.size(); ++i) 
 			{ 
-				item->getSubItem(i)->setDatablock(getDatablock(mesh.primitives[i].material)); 
+				auto subItem = item->getSubItem(i);
+				subItem->setDatablock(getDatablock(mesh.primitives[i].material));
+				if(!mesh.weights.empty())
+				{
+					subItem->setPoseWeight(i, mesh.weights[i]);
+				}
 			}
 			tagPoint->attachObject(item);
 
