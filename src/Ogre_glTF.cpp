@@ -124,21 +124,22 @@ Ogre::SceneNode* loaderAdapter::getSceneNode(size_t index, Ogre::SceneNode* pare
 
 	if(node.mesh >= 0)
 	{
-		auto mesh = pimpl->modelConv.getOgreMesh(node.mesh);
+		auto ogreMesh = pimpl->modelConv.getOgreMesh(node.mesh);
 
 		if(node.skin >= 0)
 		{
 			auto skeleton = this->pimpl->skeletonImp.getSkeleton(node.skin);
 			if(skeleton)
 			{
-				mesh->_notifySkeleton(skeleton);
+				ogreMesh->_notifySkeleton(skeleton);
 			}
 		}
 
-		auto item = smgr->createItem(mesh);
-		for(size_t i = 0; i < item->getNumSubItems(); ++i) 
+		auto item = smgr->createItem(ogreMesh);
+		const auto& mesh = pimpl->model.meshes[node.mesh];
+		for(size_t i = 0; i < mesh.primitives.size(); ++i) 
 		{ 
-			item->getSubItem(i)->setDatablock(getDatablock(i)); 
+			item->getSubItem(i)->setDatablock(getDatablock(mesh.primitives[i].material)); 
 		}
 		sceneNode->attachObject(item);
 
@@ -212,21 +213,22 @@ void loaderAdapter::createTagPoints(int boneIndex, Ogre::SkeletonInstance* skele
 				tagPoint->setScale(scale);
 			}
 
-			auto mesh = pimpl->modelConv.getOgreMesh(childNode.mesh);
+			auto ogreMesh = pimpl->modelConv.getOgreMesh(childNode.mesh);
 
 			if(childNode.skin >= 0)
 			{
 				auto skeleton = this->pimpl->skeletonImp.getSkeleton(childNode.skin);
 				if(skeleton)
 				{
-					mesh->_notifySkeleton(skeleton);
+					ogreMesh->_notifySkeleton(skeleton);
 				}
 			}
 
-			auto item = smgr->createItem(mesh);
-			for(size_t i = 0; i < item->getNumSubItems(); ++i) 
+			auto item = smgr->createItem(ogreMesh);
+			const auto& mesh = pimpl->model.meshes[childNode.mesh];
+			for(size_t i = 0; i < mesh.primitives.size(); ++i) 
 			{ 
-				item->getSubItem(i)->setDatablock(getDatablock(i)); 
+				item->getSubItem(i)->setDatablock(getDatablock(mesh.primitives[i].material)); 
 			}
 			tagPoint->attachObject(item);
 
@@ -370,30 +372,6 @@ loaderAdapter glTFLoader::loadGlbResource(const std::string& name) const
 	adapter.pimpl->modelConv.debugDump();
 	return adapter;
 }
-/*
-ModelInformation glTFLoader::getModelData(const std::string& modelName, LoadFrom loadLocation)
-{
-	auto adapter = [&] {
-		switch(loadLocation)
-		{
-			case LoadFrom::FileSystem: return loadFromFileSystem(modelName);
-			case LoadFrom::ResourceManager: return loadGlbResource(modelName);
-		}
-
-		return loaderAdapter {};
-	}();
-
-	if(!adapter.isOk()) OgreLog("adapter is signaling it isn't in \"ok\" state");
-
-	adapter.pimpl->textureImp.loadTextures();
-
-	ModelInformation model;
-	model.mesh		= adapter.getMesh();
-	model.transform = adapter.getTransform();
-	for(size_t i { 0 }; i < adapter.getDatablockCount(); i++) model.pbrMaterialList.push_back(adapter.getDatablock(i));
-
-	return model;
-}*/
 
 glTFLoader::glTFLoader(glTFLoader&& other) noexcept : loaderImpl(std::move(other.loaderImpl)) {}
 

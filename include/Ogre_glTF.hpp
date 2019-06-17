@@ -11,40 +11,6 @@ namespace Ogre_glTF
 	//Forward declare main class
 	class glTFLoader;
 
-	///Structure that contains the information of the model that you loaded
-	struct ModelInformation
-	{
-		///Easy method to build an item to use
-		/// \param smgr pointer to the scene manager where to create the item
-		/// \param sceneType tell if it will be static or dynamic
-		Ogre::Item* makeItem(Ogre::SceneManager* smgr, Ogre::SceneMemoryMgrTypes sceneType = Ogre::SCENE_DYNAMIC)
-		{
-			auto item = smgr->createItem(mesh, sceneType);
-			for(size_t i = 0; i < item->getNumSubItems(); ++i) { item->getSubItem(i)->setDatablock(pbrMaterialList[i]); }
-			return item;
-		}
-
-		///Smart pointer to the loaded mesh
-		Ogre::MeshPtr mesh;
-		///List of materials that correspond to each of the submeshes in the model
-		std::vector<Ogre::HlmsDatablock*> pbrMaterialList;
-
-		///Local transform on the glTF node this model came from
-		struct ModelTransform
-		{
-			Ogre::Vector3 position		 = Ogre::Vector3::ZERO;
-			Ogre::Vector3 scale			 = Ogre::Vector3::UNIT_SCALE;
-			Ogre::Quaternion orientation = Ogre::Quaternion::IDENTITY;
-
-			void apply (Ogre::SceneNode* node)
-			{
-				node->setPosition(position);
-				node->setScale(scale);
-				node->setOrientation(orientation);
-			}
-		} transform;
-	};
-
 	///Plugin accessible interface that plugin users can use
 	struct glTFLoaderInterface
 	{
