@@ -103,7 +103,6 @@ int main()
 
 #ifdef Ogre_glTF_STATIC
 #if __linux__
-    Ogre::String renderSystemName("GL");
     auto glPlugin = std::unique_ptr<Ogre::GL3PlusPlugin>(OGRE_NEW Ogre::GL3PlusPlugin());
     root->installPlugin(glPlugin.get());
 #endif
@@ -198,7 +197,7 @@ int main()
 
 		item = static_cast<Ogre::Item*>(springNode->getAttachedObject(0));
 		subItem = item->getSubItem(0);
-		subItem->setPoseWeight(0, (Ogre::Math::Sin(accumulator * 1.4) + 1) / 2);
+		subItem->setPoseWeight("Compressed", (Ogre::Math::Sin(accumulator * 1.4) + 1) / 2);
 
 		root->renderOneFrame();
 		Ogre::WindowEventUtilities::messagePump();
