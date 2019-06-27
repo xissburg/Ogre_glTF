@@ -1,7 +1,7 @@
 function(Ogre_glTF_config_sample PROJECTNAME)
     file(GLOB SOURCES ./*.cpp ./*.hpp ./include/*.hpp)
 
-    add_executable(${PROJECTNAME} WIN32 MACOSX_BUNDLE ${SOURCES})
+    add_executable(${PROJECTNAME} WIN32 MACOSX_BUNDLE ${SAMPLES_COMMON_HEADER_FILES} ${SAMPLES_COMMON_SOURCE_FILES} ${SOURCES})
     add_dependencies(${PROJECTNAME} Ogre_glTF)
 
     target_include_directories( ${PROJECTNAME} PUBLIC
@@ -9,6 +9,7 @@ function(Ogre_glTF_config_sample PROJECTNAME)
         ${OGRE_INCLUDE_DIRS}
         ${OGRE_HlmsPbs_INCLUDE_DIRS}
         ${OGRE_INCLUDE_DIR}/Hlms/Common
+        ${CMAKE_SOURCE_DIR}/Samples/Common
     )
 
     target_link_libraries(${PROJECTNAME}
