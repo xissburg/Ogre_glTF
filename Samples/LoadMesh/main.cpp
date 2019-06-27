@@ -33,8 +33,6 @@ const char D3D11_RENDER_PLUGIN[] = "RenderSystem_Direct3D11";
 #endif
 #endif
 
-// TODO: define this somewhere else via CMake
-#define Ogre_glTF_STATIC
 #ifdef Ogre_glTF_STATIC
 #include <RenderSystems/GL3Plus/OgreGL3PlusPlugin.h>
 #endif
