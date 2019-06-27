@@ -33,6 +33,7 @@ const char D3D11_RENDER_PLUGIN[] = "RenderSystem_Direct3D11";
 #endif
 #endif
 
+// TODO: define this somewhere else via CMake
 #define Ogre_glTF_STATIC
 #ifdef Ogre_glTF_STATIC
 #include <RenderSystems/GL3Plus/OgreGL3PlusPlugin.h>
@@ -139,23 +140,13 @@ int main()
 	Ogre::ResourceGroupManager::getSingleton().addResourceLocation("../Media/gltfFiles.zip", "Zip");
 	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups(true);
 
+	auto gltf = std::make_unique<Ogre_glTF::glTFLoader>();
 	Ogre::SceneNode* objectNode = nullptr;
 
-	//Ogre::Item* OtherItem;
-	//Initialize the library
-	auto gltf = std::make_unique<Ogre_glTF::glTFLoader>();
-
-	//Ogre_glTF::loaderAdapter gizmoLoader;
 	try
 	{
-		//auto adapter = gltf->loadFromFileSystem("from_gltf_export_skinned_cylinder.glb");
-		//auto adapter = gltf->loadGlbResource("CesiumMan.glb");
-
-		//gizmoLoader = gltf->loadFromFileSystem("../Media/gizmo.glb");
-
-		//auto adapter = gltf->loadFromFileSystem("./Corset.glb");
-		auto loader = gltf->loadFromFileSystem("/home/xissburg/Desktop/buggy_v2.gltf");
-		objectNode = loader.getFirstSceneNode(smgr);
+		auto adapter = gltf->loadFromFileSystem("../Media/damagedHelmet/damagedHelmet.gltf");
+		objectNode = adapter.getFirstSceneNode(smgr);
 	}
 	catch(std::exception& e)
 	{
@@ -163,18 +154,10 @@ int main()
 		return -1;
 	}
 
-	//auto gizmoNode = ObjectNode->createChildSceneNode();
-	//gizmoNode->attachObject(gizmoLoader.getItem(smgr));
-
-	//gizmoNode->getAttachedObject(0);
-	//auto gizmoItem = dynamic_cast<Ogre::Item*>(gizmoNode->getAttachedObject(0));
-
-	//gizmoNode->setScale(1, 1, 1);
-	//ObjectNode->setOrientation(Ogre::Quaternion(Ogre::Degree(-90), Ogre::Vector3::UNIT_X));
 	camera->setNearClipDistance(0.001f);
 	camera->setFarClipDistance(100);
-	camera->setPosition(0.2f, 0.8f, 2.5f);
-	camera->lookAt({ 0, 0.2f, 0 });
+	camera->setPosition(2.5f, 0.6f, 2.5f);
+	camera->lookAt({ 0, -0.1f, 0 });
 	camera->setAutoAspectRatio(true);
 
 	auto light = smgr->createLight();
@@ -189,39 +172,17 @@ int main()
 	light->setDirection(Ogre::Vector3 { +1, +1, +0.5f });
 	light->setPowerScale(5);
 
-	/*ObjectItem = static_cast<Ogre::Item*>(ObjectNode->getAttachedObject(0));
-	auto skeleton = ObjectItem->getSkeletonInstance();
-
-	Ogre::SkeletonAnimation* anim = nullptr;
-	Ogre::Bone* bone			  = nullptr;
-
-	auto plugins = root->getInstalledPlugins();
-
-
-	if(skeleton)
-	{
-		bone				= skeleton->getBone(1);
-		auto& animationList = skeleton->getAnimations();
-		if(!animationList.empty())
-		{
-			const auto name = animationList[0].getName();
-			anim			= skeleton->getAnimation(name);
-		}
-
-		if(anim)
-		{
-			anim->setEnabled(true);
-			anim->setLoop(true);
-		}
-	}*/
-
 	auto last = root->getTimer()->getMilliseconds();
 	auto now  = last;
+	Ogre::Real accumulator = 0;
+
 	while(!window->isClosed())
 	{
 		now = root->getTimer()->getMilliseconds();
-		//if(anim) anim->addTime(float(now - last) / 1000.0f);
+		accumulator += (now - last) / 1000.0f;
 		last = now;
+
+		objectNode->setOrientation(Ogre::Quaternion(Ogre::Radian(accumulator), Ogre::Vector3::UNIT_Y));
 
 		root->renderOneFrame();
 		Ogre::WindowEventUtilities::messagePump();

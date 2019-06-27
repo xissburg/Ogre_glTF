@@ -1,3 +1,4 @@
+add_subdirectory(LoadMesh)
 add_subdirectory(MorphAnimations)
 
 add_custom_target(CopyHLMS ALL

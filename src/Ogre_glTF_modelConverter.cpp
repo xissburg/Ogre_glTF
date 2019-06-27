@@ -116,7 +116,7 @@ Ogre::MeshPtr modelConverter::getOgreMesh(const tinygltf::Mesh& mesh)
 			parts.push_back(std::move(extractVertexBuffer(atribute, boundingBox)));
 		}
 
-		//Get (if they exists) the blend weights and bone index parts of our vertex array object content
+		//Get (if they exist) the blend weights and bone index parts of our vertex array object content
 		const auto blendIndicesIt = std::find_if(std::begin(parts), std::end(parts), [](const vertexBufferPart& vertexBufferPart) {
 			return (vertexBufferPart.semantic == Ogre::VertexElementSemantic::VES_BLEND_INDICES);
 		});
