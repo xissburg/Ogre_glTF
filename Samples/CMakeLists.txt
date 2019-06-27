@@ -1,5 +1,6 @@
 add_subdirectory(Common)
 add_subdirectory(LoadMesh)
+add_subdirectory(SkinnedMesh)
 add_subdirectory(MorphAnimations)
 
 add_custom_target(CopyHLMS ALL
