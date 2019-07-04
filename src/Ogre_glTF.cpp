@@ -62,21 +62,7 @@ Ogre::SceneNode* loaderAdapter::getFirstSceneNode(Ogre::SceneManager* smgr) cons
 	if(isOk())
 	{
 		pimpl->textureImp.loadTextures();
-
-		// Find a node which is not a child of another node
-		std::vector<int> allChildren;
-		for(const auto& node : pimpl->model.nodes)
-		{
-			allChildren.insert(allChildren.end(), node.children.begin(), node.children.end());
-		}
-		// Find a node index that is not preset in the allChildren array and build 
-		// the hierarchy from there.
-		for(size_t i = 0; i < pimpl->model.nodes.size(); ++i)
-		{
-			if(std::find(allChildren.begin(), allChildren.end(), i) == allChildren.end()) {
-				return getSceneNode(i, smgr->getRootSceneNode(), smgr);
-			}
-		}
+		return getSceneNode(pimpl->model.scenes[0].nodes[0], smgr->getRootSceneNode(), smgr);
 	}
 
 	return nullptr;
@@ -124,7 +110,31 @@ Ogre::SceneNode* loaderAdapter::getSceneNode(size_t index, Ogre::SceneNode* pare
 
 	if(node.mesh >= 0)
 	{
-		auto ogreMesh = pimpl->modelConv.getOgreMesh(node.mesh);
+		std::vector<int> meshes;
+		meshes.push_back(node.mesh);
+
+		if(node.extensions.count("MSFT_lod"))
+		{
+			const tinygltf::Value& ids = node.extensions.at("MSFT_lod").Get("ids");
+			for(size_t i = 0; i < ids.ArrayLen(); ++i)
+			{
+				auto lodNode = pimpl->model.nodes[i];
+				meshes.push_back(lodNode.mesh);
+			}
+		}
+
+		Ogre::Mesh::LodValueArray lodValues;
+
+		if(std::find(node.extras.Keys().begin(), node.extras.Keys().end(), "MSFT_screencoverage") != node.extras.Keys().end())
+		{
+			const tinygltf::Value screenconverageValue = node.extras.Get("MSFT_screencoverage");
+			for(size_t i = 0; i < screenconverageValue.Size(); ++i)
+			{
+				lodValues.push_back(static_cast<Ogre::Real>(screenconverageValue.Get(i).Get<double>()));
+			}
+		}
+
+		auto ogreMesh = pimpl->modelConv.getOgreMesh(meshes, lodValues);
 
 		if(node.skin >= 0)
 		{
