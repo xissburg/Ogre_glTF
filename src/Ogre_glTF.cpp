@@ -57,15 +57,28 @@ loaderAdapter::loaderAdapter() : pimpl { std::make_unique<impl>() } { OgreLog("C
 
 loaderAdapter::~loaderAdapter() { OgreLog("Destructed adapter object..."); }
 
+void loaderAdapter::loadMainScene(Ogre::SceneNode* parentNode, Ogre::SceneManager* smgr) const
+{
+	if(!isOk())
+		return;
+
+	pimpl->textureImp.loadTextures();
+	auto sceneIdx = pimpl->model.defaultScene >= 0 ? pimpl->model.defaultScene : 0;
+	const auto& scene = pimpl->model.scenes[sceneIdx];
+
+	for(auto nodeIdx : scene.nodes)
+	{
+		getSceneNode(nodeIdx, parentNode, smgr);
+	}
+}
+
 Ogre::SceneNode* loaderAdapter::getFirstSceneNode(Ogre::SceneManager* smgr) const
 {
-	if(isOk())
-	{
-		pimpl->textureImp.loadTextures();
-		return getSceneNode(pimpl->model.scenes[0].nodes[0], smgr->getRootSceneNode(), smgr);
-	}
-
-	return nullptr;
+	if(!isOk())
+		return nullptr;
+	
+	pimpl->textureImp.loadTextures();
+	return getSceneNode(pimpl->model.scenes[0].nodes[0], smgr->getRootSceneNode(), smgr);
 }
 
 Ogre::SceneNode* loaderAdapter::getSceneNode(size_t index, Ogre::SceneNode* parentSceneNode, Ogre::SceneManager* smgr) const
