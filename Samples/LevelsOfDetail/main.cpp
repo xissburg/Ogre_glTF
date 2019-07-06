@@ -59,7 +59,7 @@ int main()
 
 	try
 	{
-		auto adapter = gltf->loadGlbResource("sphere_lod.glb");
+		auto adapter = gltf->loadGlbResource("capsule_lod.glb");
 		objectNode = adapter.getFirstSceneNode(smgr);
 	}
 	catch(std::exception& e)
@@ -88,6 +88,35 @@ int main()
 
     //Ogre::LodStrategyManager::getSingleton().setDefaultStrategy("screen_ratio_pixel_count");
 
+	//Setup animation and update it over time
+	Ogre::SkeletonAnimation* animation = nullptr;
+	// Find a node that contains an item that contains an skeleton
+	auto childIt = objectNode->getChildIterator();
+
+	while(childIt.hasMoreElements())
+	{
+		auto sceneNode = static_cast<Ogre::SceneNode*>(childIt.getNext());
+		if(sceneNode->numAttachedObjects() == 0)
+			continue;
+
+		auto itemIt = sceneNode->getAttachedObjectIterator();
+
+		while(itemIt.hasMoreElements())
+		{
+			auto item = static_cast<Ogre::Item*>(itemIt.getNext());
+			auto skeleton = item->getSkeletonInstance();
+
+			if(skeleton)
+			{
+				const auto animationName = (skeleton->getAnimations().front().getName());
+				animation = item->getSkeletonInstance()->getAnimation(animationName);
+				animation->setEnabled(true);
+				animation->setLoop(true);
+				break;
+			}
+		}
+	}
+
 	auto last = root->getTimer()->getMilliseconds();
 	auto now  = last;
 	Ogre::Real accumulator = 0;
@@ -95,10 +124,12 @@ int main()
 	while(!window->isClosed())
 	{
 		now = root->getTimer()->getMilliseconds();
-		accumulator += (now - last) / 1000.0f;
+		auto dt = (now - last) / 1000.0f;
+		accumulator += dt;
 		last = now;
 
-        objectNode->setPosition(Ogre::Math::Sin(accumulator) * 2.f, 0, 0);
+		animation->addTime(dt);
+        camera->setPosition(6.f + Ogre::Math::Sin(accumulator) * 4.5f, 0, 0);
 
 		root->renderOneFrame();
 		Ogre::WindowEventUtilities::messagePump();

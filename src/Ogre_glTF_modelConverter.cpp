@@ -56,7 +56,7 @@ Ogre::VertexBufferPackedVec modelConverter::constructVertexBuffer(const std::vec
 	vec.push_back(vertexBuffer);
 	return vec;
 }
-/*
+
 Ogre::MeshPtr modelConverter::getOgreMesh(const Ogre::String& name)
 {
 	if(name.empty())
@@ -70,15 +70,16 @@ Ogre::MeshPtr modelConverter::getOgreMesh(const Ogre::String& name)
 		}
 	}
 
-	for(const auto& mesh : model.meshes) {
+	for(size_t meshIdx = 0; meshIdx < model.meshes.size(); ++meshIdx) {
+		const auto& mesh = model.meshes[meshIdx];
 		if(!mesh.name.empty() && mesh.name == name) {
-			return getOgreMesh(mesh);
+			return getOgreMesh(meshIdx);
 		}
 	}
 	
 	return Ogre::MeshPtr();
 }
-*/
+
 Ogre::MeshPtr modelConverter::getOgreMesh(size_t index)
 {
 	assert(index < model.meshes.size());
@@ -87,13 +88,6 @@ Ogre::MeshPtr modelConverter::getOgreMesh(size_t index)
 	Ogre::Mesh::LodValueArray lodValues;
 	return getOgreMesh(indices, lodValues);
 }
-
-/* Ogre::MeshPtr modelConverter::getOgreMesh(const tinygltf::Mesh& mesh)
-{
-	std::vector<tinygltf::Mesh> meshes;
-	meshes.push_back(mesh);
-	return getOgreMesh(meshes);
-} */
 
 Ogre::MeshPtr modelConverter::getOgreMesh(const std::vector<int>& indices, const Ogre::Mesh::LodValueArray& lodValues)
 {
@@ -114,16 +108,23 @@ Ogre::MeshPtr modelConverter::getOgreMesh(const std::vector<int>& indices, const
 	OgreLog("Created mesh on v2 MeshManager");
 
 	size_t primIdx = 0;
-
+	// Create one Ogre::SubMesh per primitive
 	for(size_t primIdx = 0; primIdx < mesh.primitives.size(); ++primIdx)
 	{
 		auto subMesh = ogreMesh->createSubMesh();
 		OgreLog("Created one submesh");
 
-		for(size_t i = 0; i < indices.size(); ++i)
+		// For each mesh index a separate VAO is created and added to the SubMesh. Each VAO represents one LOD.
+		for(size_t lodIdx = 0; lodIdx < indices.size(); ++lodIdx)
 		{
-			const auto& mesh = model.meshes[indices[i]];
-			const auto& primitive = mesh.primitives[primIdx];
+			const auto& lodMesh = model.meshes[indices[lodIdx]];
+			
+			// Lower LODs might have fewer primitives
+			if(primIdx >= lodMesh.primitives.size())
+				continue;
+
+			// Get the primitive for this LOD
+			const auto& primitive = lodMesh.primitives[primIdx];
 			std::vector<vertexBufferPart> parts;
 			//OgreLog("\tprimitive has : " + std::to_string(primitive.attributes.size()) + " atributes");
 			for(const auto& atribute : primitive.attributes)
@@ -151,72 +152,68 @@ Ogre::MeshPtr modelConverter::getOgreMesh(const std::vector<int>& indices, const
 			subMesh->mVao[Ogre::VpNormal].push_back(vao);
 			subMesh->mVao[Ogre::VpShadow].push_back(vao);
 
-			if(i == 0)
+			//Get (if they exist) the blend weights and bone index parts of our vertex array object content
+			const auto blendIndicesIt = std::find_if(std::begin(parts), std::end(parts), [](const vertexBufferPart& vertexBufferPart) {
+				return (vertexBufferPart.semantic == Ogre::VertexElementSemantic::VES_BLEND_INDICES);
+			});
+
+			const auto blendWeightsIt = std::find_if(std::begin(parts), std::end(parts), [](const vertexBufferPart& vertexBufferPart) {
+				return (vertexBufferPart.semantic == Ogre::VertexElementSemantic::VES_BLEND_WEIGHTS);
+			});
+
+			if(blendIndicesIt != std::end(parts) && blendWeightsIt != std::end(parts))
 			{
-				//Get (if they exist) the blend weights and bone index parts of our vertex array object content
-				const auto blendIndicesIt = std::find_if(std::begin(parts), std::end(parts), [](const vertexBufferPart& vertexBufferPart) {
-					return (vertexBufferPart.semantic == Ogre::VertexElementSemantic::VES_BLEND_INDICES);
-				});
+				subMesh->clearBoneAssignments();
+				//subMesh->_buildBoneAssignmentsFromVertexData();
 
-				const auto blendWeightsIt = std::find_if(std::begin(parts), std::end(parts), [](const vertexBufferPart& vertexBufferPart) {
-					return (vertexBufferPart.semantic == Ogre::VertexElementSemantic::VES_BLEND_WEIGHTS);
-				});
+				//Get the vertexBufferParts from the two iterators
+				//OgreLog("The vertex buffer contains blend weights and indices information!");
+				vertexBufferPart& blendIndices = *blendIndicesIt;
+				vertexBufferPart& blendWeights = *blendWeightsIt;
 
-				if(blendIndicesIt != std::end(parts) && blendWeightsIt != std::end(parts))
+				//Debug sanity check, both should be equals
+				//OgreLog("Vertex count blendIndex : " + std::to_string(blendIndices.vertexCount));
+				//OgreLog("Vertex count blendWeight: " + std::to_string(blendWeights.vertexCount));
+				//OgreLog("Vertex element count blendIndex : " + std::to_string(blendIndices.perVertex));
+				//OgreLog("Vertex element count blendWeight: " + std::to_string(blendWeights.perVertex));
+
+				//Allocate 2 small arrays to store the bone idexes. (They should be of lenght "4")
+				std::vector<Ogre::ushort> vertexBoneIndex(blendIndices.perVertex);
+				std::vector<Ogre::Real> vertexBlend(blendWeights.perVertex);
+
+				//Add the attahcments for each bones
+				for(Ogre::uint32 vertexIndex = 0; vertexIndex < blendIndices.vertexCount; ++vertexIndex)
 				{
-					//subMesh->_buildBoneAssignmentsFromVertexData();
+					//Fetch the for bone indexes from the buffer
+					memcpy(vertexBoneIndex.data(),
+						blendIndices.buffer->dataAddress() + (blendIndices.getPartStride() * vertexIndex),
+						blendIndices.perVertex * sizeof(Ogre::ushort));
 
-					//Get the vertexBufferParts from the two iterators
-					//OgreLog("The vertex buffer contains blend weights and indices information!");
-					vertexBufferPart& blendIndices = *blendIndicesIt;
-					vertexBufferPart& blendWeights = *blendWeightsIt;
+					//Fetch the for weights from the buffer
+					memcpy(vertexBlend.data(),
+						blendWeights.buffer->dataAddress() + (blendWeights.getPartStride() * vertexIndex),
+						blendWeights.perVertex * sizeof(Ogre::Real));
 
-					//Debug sanity check, both should be equals
-					//OgreLog("Vertex count blendIndex : " + std::to_string(blendIndices.vertexCount));
-					//OgreLog("Vertex count blendWeight: " + std::to_string(blendWeights.vertexCount));
-					//OgreLog("Vertex element count blendIndex : " + std::to_string(blendIndices.perVertex));
-					//OgreLog("Vertex element count blendWeight: " + std::to_string(blendWeights.perVertex));
-
-					//Allocate 2 small arrays to store the bone idexes. (They should be of lenght "4")
-					std::vector<Ogre::ushort> vertexBoneIndex(blendIndices.perVertex);
-					std::vector<Ogre::Real> vertexBlend(blendWeights.perVertex);
-
-					//Add the attahcments for each bones
-					for(Ogre::uint32 vertexIndex = 0; vertexIndex < blendIndices.vertexCount; ++vertexIndex)
+					//Add the bone assignments to the submesh
+					for(size_t i = 0; i < blendIndices.perVertex; ++i)
 					{
-						//Fetch the for bone indexes from the buffer
-						memcpy(vertexBoneIndex.data(),
-							blendIndices.buffer->dataAddress() + (blendIndices.getPartStride() * vertexIndex),
-							blendIndices.perVertex * sizeof(Ogre::ushort));
+						auto vba = Ogre::VertexBoneAssignment(vertexIndex, vertexBoneIndex[i], vertexBlend[i]);
 
-						//Fetch the for weights from the buffer
-						memcpy(vertexBlend.data(),
-							blendWeights.buffer->dataAddress() + (blendWeights.getPartStride() * vertexIndex),
-							blendWeights.perVertex * sizeof(Ogre::Real));
+						//OgreLog("VertexBoneAssignment: " + std::to_string(i) + " over " + std::to_string(blendIndices.perVertex));
+						//OgreLog(std::to_string(vba.vertexIndex));
+						//OgreLog(std::to_string(vba.boneIndex));
+						//OgreLog(std::to_string(vba.weight));
 
-						//Add the bone assignments to the submesh
-						for(size_t i = 0; i < blendIndices.perVertex; ++i)
-						{
-							auto vba = Ogre::VertexBoneAssignment(vertexIndex, vertexBoneIndex[i], vertexBlend[i]);
-
-							//OgreLog("VertexBoneAssignment: " + std::to_string(i) + " over " + std::to_string(blendIndices.perVertex));
-							//OgreLog(std::to_string(vba.vertexIndex));
-							//OgreLog(std::to_string(vba.boneIndex));
-							//OgreLog(std::to_string(vba.weight));
-
-							subMesh->addBoneAssignment(vba);
-						}
+						subMesh->addBoneAssignment(vba);
 					}
-
-					//subMesh->_buildBoneIndexMap();
-					subMesh->_compileBoneAssignments();
 				}
+
+				//subMesh->_buildBoneIndexMap();
+				subMesh->_compileBoneAssignments(lodIdx);
 			}
 		}
 	}
 
-	Ogre::Mesh::LodValueArray reversedLodValues = lodValues;
-	std::reverse(reversedLodValues.begin(), reversedLodValues.end());
 	ogreMesh->_setLodValues(lodValues);
 
 	ogreMesh->_setBounds(boundingBox, true);

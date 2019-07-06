@@ -131,7 +131,8 @@ Ogre::SceneNode* loaderAdapter::getSceneNode(size_t index, Ogre::SceneNode* pare
 			const tinygltf::Value& ids = node.extensions.at("MSFT_lod").Get("ids");
 			for(size_t i = 0; i < ids.ArrayLen(); ++i)
 			{
-				auto lodNode = pimpl->model.nodes[i];
+				auto nodeIdx = ids.Get(i).Get<int>();
+				auto lodNode = pimpl->model.nodes[nodeIdx];
 				meshes.push_back(lodNode.mesh);
 			}
 		}

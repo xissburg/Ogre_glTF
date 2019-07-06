@@ -159,10 +159,12 @@ namespace Ogre_glTF
 		/// \param input model we are converting into an Ogre model
 		modelConverter(tinygltf::Model& input);
 
-		///Returns the mesh with the given name in the glTF file. If name is empty it will return the first mesh if any.
-		//Ogre::MeshPtr getOgreMesh(const Ogre::String& name = "");
+		///Returns the mesh with the given name in the glTF file.
+		Ogre::MeshPtr getOgreMesh(const Ogre::String& name);
 		Ogre::MeshPtr getOgreMesh(size_t index);
-		//Ogre::MeshPtr getOgreMesh(const tinygltf::Mesh& mesh);
+
+		///Loads a mesh and its LODs. The first element in indices is the index of LOD 0, and the following indices
+		///are the next LODs.
 		Ogre::MeshPtr getOgreMesh(const std::vector<int>& indices, const Ogre::Mesh::LodValueArray& lodValues);
 
 		///Print out debug information on the model structure
