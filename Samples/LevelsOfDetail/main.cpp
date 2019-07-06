@@ -50,7 +50,6 @@ int main()
 
 	DeclareHlmsLibrary("./Media");
 
-	Ogre::ResourceGroupManager::getSingleton().addResourceLocation("../Media/gltfFiles.zip", "Zip");
     Ogre::ResourceGroupManager::getSingleton().addResourceLocation("../Media/", "FileSystem");
 	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups(true);
 

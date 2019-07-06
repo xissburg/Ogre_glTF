@@ -20,6 +20,13 @@
 
 using namespace Ogre_glTF;
 
+/// Local utility functions
+
+/// Obtains the meshes for each LOD and LOD values for a node.
+void GetLodInfo(const tinygltf::Model& model, const tinygltf::Node& node, std::vector<int>& meshIndicesOut, Ogre::Mesh::LodValueArray& lodValuesOut);
+/// Sets the transform of a tinygltf::Node to an Ogre::SceneNode.
+void SetNodeTransform(const tinygltf::Node& node, Ogre::SceneNode* sceneNode);
+
 ///Implementaiton of the adapter
 struct loaderAdapter::impl
 {
@@ -98,56 +105,13 @@ Ogre::SceneNode* loaderAdapter::getSceneNode(size_t index, Ogre::SceneNode* pare
 	auto sceneNode = parentSceneNode->createChildSceneNode();
 	sceneNode->setName(node.name);
 	
-	if(!node.translation.empty())
-		sceneNode->setPosition(node.translation[0], node.translation[1], node.translation[2]);
-
-	if(!node.rotation.empty())
-		sceneNode->setOrientation(node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2]);
-
-	if(!node.scale.empty())
-		sceneNode->setScale(node.scale[0], node.scale[1], node.scale[2]);
-
-	if(!node.matrix.empty())
-	{
-		std::array<Ogre::Real, 4 * 4> matrixArray { 0 };
-		internal_utils::container_double_to_real(node.matrix, matrixArray);
-		Ogre::Matrix4 matrix { matrixArray.data() };
-		Ogre::Vector3 position;
-		Ogre::Quaternion orientation;
-		Ogre::Vector3 scale;
-		matrix.transpose().decomposition(position, scale, orientation);
-		sceneNode->setPosition(position);
-		sceneNode->setOrientation(orientation);
-		sceneNode->setScale(scale);
-	}
+	SetNodeTransform(node, sceneNode);
 
 	if(node.mesh >= 0)
 	{
 		std::vector<int> meshes;
-		meshes.push_back(node.mesh);
-
-		if(node.extensions.count("MSFT_lod"))
-		{
-			const tinygltf::Value& ids = node.extensions.at("MSFT_lod").Get("ids");
-			for(size_t i = 0; i < ids.ArrayLen(); ++i)
-			{
-				auto nodeIdx = ids.Get(i).Get<int>();
-				auto lodNode = pimpl->model.nodes[nodeIdx];
-				meshes.push_back(lodNode.mesh);
-			}
-		}
-
 		Ogre::Mesh::LodValueArray lodValues;
-
-		if(std::find(node.extras.Keys().begin(), node.extras.Keys().end(), "MSFT_screencoverage") != node.extras.Keys().end())
-		{
-			const tinygltf::Value screenconverageValue = node.extras.Get("MSFT_screencoverage");
-			for(size_t i = 0; i < screenconverageValue.Size(); ++i)
-			{
-				lodValues.push_back(static_cast<Ogre::Real>(screenconverageValue.Get(i).Get<double>()));
-			}
-		}
-
+		GetLodInfo(pimpl->model, node, meshes, lodValues);
 		auto ogreMesh = pimpl->modelConv.getOgreMesh(meshes, lodValues);
 
 		if(node.skin >= 0)
@@ -220,32 +184,12 @@ void loaderAdapter::createTagPoints(int boneIndex, Ogre::SkeletonInstance* skele
 			auto tagPoint = smgr->createTagPoint();
 			tagPoint->setName(childNode.name);
 
-			Ogre::Vector3 position;
-			Ogre::Quaternion orientation;
-			Ogre::Vector3 scale(1);
-			
-			if(!childNode.translation.empty())
-				position = Ogre::Vector3(childNode.translation[0], childNode.translation[1], childNode.translation[2]);
+			SetNodeTransform(childNode, tagPoint);
 
-			if(!childNode.rotation.empty())
-				orientation = Ogre::Quaternion(childNode.rotation[3], childNode.rotation[0], childNode.rotation[1], childNode.rotation[2]);
-
-			if(!childNode.scale.empty())
-				scale = Ogre::Vector3(childNode.scale[0], childNode.scale[1], childNode.scale[2]);
-
-			if(!childNode.matrix.empty())
-			{
-				std::array<Ogre::Real, 4 * 4> matrixArray { 0 };
-				internal_utils::container_double_to_real(childNode.matrix, matrixArray);
-				Ogre::Matrix4 matrix { matrixArray.data() };
-				matrix.transpose().decomposition(position, scale, orientation);
-			}
-
-			tagPoint->setPosition(position);
-			tagPoint->setOrientation(orientation);
-			tagPoint->setScale(scale);
-
-			auto ogreMesh = pimpl->modelConv.getOgreMesh(childNode.mesh);
+			std::vector<int> meshes;
+			Ogre::Mesh::LodValueArray lodValues;
+			GetLodInfo(pimpl->model, childNode, meshes, lodValues);
+			auto ogreMesh = pimpl->modelConv.getOgreMesh(meshes, lodValues);
 
 			if(childNode.skin >= 0)
 			{
@@ -415,3 +359,54 @@ glTFLoader& glTFLoader::operator=(glTFLoader&& other) noexcept
 }
 
 glTFLoader::~glTFLoader() = default;
+
+void GetLodInfo(const tinygltf::Model& model, const tinygltf::Node& node, std::vector<int>& meshIndicesOut, Ogre::Mesh::LodValueArray& lodValuesOut)
+{
+	meshIndicesOut.push_back(node.mesh);
+
+	if(node.extensions.count("MSFT_lod"))
+	{
+		const tinygltf::Value& ids = node.extensions.at("MSFT_lod").Get("ids");
+		for(size_t i = 0; i < ids.ArrayLen(); ++i)
+		{
+			auto nodeIdx = ids.Get(i).Get<int>();
+			auto lodNode = model.nodes[nodeIdx];
+			meshIndicesOut.push_back(lodNode.mesh);
+		}
+	}
+
+	if(std::find(node.extras.Keys().begin(), node.extras.Keys().end(), "MSFT_screencoverage") != node.extras.Keys().end())
+	{
+		const tinygltf::Value screenconverageValue = node.extras.Get("MSFT_screencoverage");
+		for(size_t i = 0; i < screenconverageValue.Size(); ++i)
+		{
+			lodValuesOut.push_back(static_cast<Ogre::Real>(screenconverageValue.Get(i).Get<double>()));
+		}
+	}
+}
+
+void SetNodeTransform(const tinygltf::Node& node, Ogre::SceneNode* sceneNode)
+{
+	if(!node.translation.empty())
+		sceneNode->setPosition(node.translation[0], node.translation[1], node.translation[2]);
+
+	if(!node.rotation.empty())
+		sceneNode->setOrientation(node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2]);
+
+	if(!node.scale.empty())
+		sceneNode->setScale(node.scale[0], node.scale[1], node.scale[2]);
+
+	if(!node.matrix.empty())
+	{
+		std::array<Ogre::Real, 4 * 4> matrixArray { 0 };
+		internal_utils::container_double_to_real(node.matrix, matrixArray);
+		Ogre::Matrix4 matrix { matrixArray.data() };
+		Ogre::Vector3 position;
+		Ogre::Quaternion orientation;
+		Ogre::Vector3 scale;
+		matrix.transpose().decomposition(position, scale, orientation);
+		sceneNode->setPosition(position);
+		sceneNode->setOrientation(orientation);
+		sceneNode->setScale(scale);
+	}
+}
