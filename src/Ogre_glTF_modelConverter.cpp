@@ -115,9 +115,9 @@ Ogre::MeshPtr modelConverter::getOgreMesh(const std::vector<int>& indices, const
 		OgreLog("Created one submesh");
 
 		// For each mesh index a separate VAO is created and added to the SubMesh. Each VAO represents one LOD.
-		for(size_t lodIdx = 0; lodIdx < indices.size(); ++lodIdx)
+		for(size_t lod = 0; lod < indices.size(); ++lod)
 		{
-			const auto& lodMesh = model.meshes[indices[lodIdx]];
+			const auto& lodMesh = model.meshes[indices[lod]];
 			
 			// Lower LODs might have fewer primitives
 			if(primIdx >= lodMesh.primitives.size())
@@ -209,7 +209,64 @@ Ogre::MeshPtr modelConverter::getOgreMesh(const std::vector<int>& indices, const
 				}
 
 				//subMesh->_buildBoneIndexMap();
-				subMesh->_compileBoneAssignments(lodIdx);
+				subMesh->_compileBoneAssignments(lod);
+			}
+
+			if(!primitive.targets.empty())
+			{
+				Ogre::vector<const float*>::type positionData;
+				Ogre::vector<const float*>::type normalData;
+				Ogre::vector<Ogre::String>::type targetNames;
+				size_t numVertices = 0;
+				size_t targetIndex = 0;
+
+				for(auto& target : primitive.targets)
+				{	
+					const auto& positionIter = target.find("POSITION");
+					if(positionIter != target.end()) 
+					{
+						const auto& accessor = model.accessors[positionIter->second];
+						const auto& bufferView = model.bufferViews[accessor.bufferView];
+						const auto& buffer = model.buffers[bufferView.buffer];
+						const auto& data = &buffer.data[bufferView.byteOffset];
+						positionData.push_back(reinterpret_cast<const float*>(data));
+						numVertices = accessor.count;
+					}
+
+					const auto& normalIter = target.find("NORMAL");
+					if(normalIter != target.end()) 
+					{
+						const auto& accessor = model.accessors[normalIter->second];
+						const auto& bufferView = model.bufferViews[accessor.bufferView];
+						const auto& buffer = model.buffers[bufferView.buffer];
+						const auto& data = &buffer.data[bufferView.byteOffset];
+						normalData.push_back(reinterpret_cast<const float*>(data));
+					}
+
+					if(mesh.extras.Has("targetNames"))
+					{
+						const auto& names = mesh.extras.Get("targetNames");
+						if(targetIndex < names.Size())
+						{
+							const auto& nameValue = names.Get(targetIndex);
+							const auto& name = nameValue.Get<std::string>();
+							targetNames.push_back(name);
+						}
+						else
+						{
+							targetNames.push_back("");
+						}
+					}
+
+					++targetIndex;
+				}
+
+				if(!positionData.empty())
+				{
+					auto normalPtr = normalData.empty() ? nullptr : normalData.data();
+					auto namesPtr = targetNames.empty() ? nullptr : targetNames.data();
+					subMesh->createPoses(positionData.data(), normalPtr, positionData.size(), numVertices, namesPtr);
+				}
 			}
 		}
 	}

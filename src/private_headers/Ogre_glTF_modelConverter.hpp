@@ -161,12 +161,12 @@ namespace Ogre_glTF
 
 		///Returns the mesh with the given name in the glTF file.
 		Ogre::MeshPtr getOgreMesh(const Ogre::String& name);
-		Ogre::MeshPtr getOgreMesh(size_t index);
+		Ogre::MeshPtr getOgreMesh(size_t meshIdx);
 
 		///Loads a mesh and its LODs. The first element in indices is the index of LOD 0, and the following indices
-		///are the next LODs.
+		///are the next LODs. Loads a single mesh without LODs if indices contains a single element.
 		Ogre::MeshPtr getOgreMesh(const std::vector<int>& indices, const Ogre::Mesh::LodValueArray& lodValues);
-
+		
 		///Print out debug information on the model structure
 		// nodes contain transformation and scale information
 		void debugDump() const;
