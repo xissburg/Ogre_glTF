@@ -109,7 +109,7 @@ int main()
 
 		auto springItem = static_cast<Ogre::Item*>(springNode->getAttachedObject(0));
 		subItem = springItem->getSubItem( 0 );
-		subItem->setPoseWeight(0, (Ogre::Math::Sin(accumulator * 1.4) + 1) / 2);
+		subItem->setPoseWeight("Compressed", (Ogre::Math::Sin(accumulator * 1.4) + 1) / 2);
 
 		root->renderOneFrame();
 		Ogre::WindowEventUtilities::messagePump();

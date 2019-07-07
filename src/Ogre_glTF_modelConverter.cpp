@@ -190,7 +190,9 @@ Ogre::MeshPtr modelConverter::getOgreMesh(size_t meshIdx)
 
 		Ogre::vector<const float*>::type positionData;
 		Ogre::vector<const float*>::type normalData;
+		Ogre::vector<Ogre::String>::type targetNames;
 		size_t numVertices = 0;
+		size_t targetIndex = 0;
 
 		for(auto& target : primitive.targets)
 		{	
@@ -214,12 +216,30 @@ Ogre::MeshPtr modelConverter::getOgreMesh(size_t meshIdx)
 				const auto& data = &buffer.data[bufferView.byteOffset];
 				normalData.push_back(reinterpret_cast<const float*>(data));
 			}
+
+			if(mesh.extras.Has("targetNames"))
+			{
+				const auto& names = mesh.extras.Get("targetNames");
+				if(targetIndex < names.Size())
+				{
+					const auto& nameValue = names.Get(targetIndex);
+					const auto& name = nameValue.Get<std::string>();
+					targetNames.push_back(name);
+				}
+				else
+				{
+					targetNames.push_back("");
+				}
+			}
+
+			++targetIndex;
 		}
 
 		if(!positionData.empty())
 		{
 			auto normalPtr = normalData.empty() ? nullptr : normalData.data();
-			subMesh->createPoses(positionData.data(), normalPtr, positionData.size(), numVertices);
+			auto namesPtr = targetNames.empty() ? nullptr : targetNames.data();
+			subMesh->createPoses(positionData.data(), normalPtr, positionData.size(), numVertices, namesPtr);
 		}
 	}
 
