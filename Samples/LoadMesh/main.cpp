@@ -45,24 +45,33 @@ int main()
 	compositor->createBasicWorkspaceDef(workspaceName, Ogre::ColourValue { 0.2f, 0.3f, 0.4f });
 	auto workspace = compositor->addWorkspace(smgr, window, camera, workspaceName, true);
 
-	DeclareHlmsLibrary("./Media/");
+	DeclareHlmsLibrary("./Media");
 
 	Ogre::ResourceGroupManager::getSingleton().addResourceLocation("../Media/gltfFiles.zip", "Zip");
 	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups(true);
 
-	Ogre::SceneNode* blobNode = nullptr;
-	Ogre::SceneNode* springNode = nullptr;
-
-	//Initialize the library
 	auto gltf = std::make_unique<Ogre_glTF::glTFLoader>();
+	Ogre::SceneNode* objectNode = nullptr;
 
 	try
 	{
-		auto blobAdapter = gltf->loadFromFileSystem("../Media/blob.glb");
-		blobNode = blobAdapter.getFirstSceneNode(smgr);
+		auto adapter = gltf->loadFromFileSystem("../Media/damagedHelmet/damagedHelmet.gltf");
+		objectNode = adapter.getFirstSceneNode(smgr);
 
-		auto springAdapter = gltf->loadFromFileSystem("../Media/spring.glb");
-		springNode = springAdapter.getFirstSceneNode(smgr);
+		// On a scene with multiple root objects `loadMainScene` can be used to load all objects.
+		/*
+		auto root = smgr->getRootSceneNode();
+		adapter.loadMainScene(root, smgr);
+		auto childIt = root->getChildIterator();
+		while(childIt.hasMoreElements())
+		{
+			auto child = childIt.getNext();
+			if(child->getName() == "UnityGlTF_root")
+			{
+				objectNode = static_cast<Ogre::SceneNode*>(child);
+				break;
+			}
+		}*/
 	}
 	catch(std::exception& e)
 	{
@@ -70,12 +79,10 @@ int main()
 		return -1;
 	}
 
-	springNode->translate(1, 0, 0);
-
 	camera->setNearClipDistance(0.001f);
 	camera->setFarClipDistance(100);
-	camera->setPosition(2.5f, 0.5f, 2.5f);
-	camera->lookAt({ 0, 0, 0 });
+	camera->setPosition(2.5f, 0.6f, 2.5f);
+	camera->lookAt({ 0, -0.1f, 0 });
 	camera->setAutoAspectRatio(true);
 
 	auto light = smgr->createLight();
@@ -92,24 +99,15 @@ int main()
 
 	auto last = root->getTimer()->getMilliseconds();
 	auto now  = last;
-    auto accumulator = 0.f;
+	Ogre::Real accumulator = 0;
 
 	while(!window->isClosed())
 	{
 		now = root->getTimer()->getMilliseconds();
-		accumulator += float(now - last) / 1000.0f;
+		accumulator += (now - last) / 1000.0f;
 		last = now;
 
-		auto blobItem = static_cast<Ogre::Item*>(blobNode->getAttachedObject(0));
-        auto subItem = blobItem->getSubItem( 0 );
-        for( int i = 0; i < subItem->getNumPoses(); ++i )
-        {
-            subItem->setPoseWeight(i, Ogre::Math::Sin(accumulator * (1 + i * 0.1) * 3 + i) * 0.27 );
-        }
-
-		auto springItem = static_cast<Ogre::Item*>(springNode->getAttachedObject(0));
-		subItem = springItem->getSubItem( 0 );
-		subItem->setPoseWeight(0, (Ogre::Math::Sin(accumulator * 1.4) + 1) / 2);
+		objectNode->setOrientation(Ogre::Quaternion(Ogre::Radian(accumulator), Ogre::Vector3::UNIT_Y));
 
 		root->renderOneFrame();
 		Ogre::WindowEventUtilities::messagePump();
