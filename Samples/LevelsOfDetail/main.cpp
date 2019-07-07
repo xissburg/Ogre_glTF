@@ -2,6 +2,7 @@
 #include "Ogre_glTF_common.hpp"
 
 #include <OgreLodStrategyManager.h>
+#include <Animation/OgreTagPoint.h>
 
 int main()
 {
@@ -89,6 +90,7 @@ int main()
 
 	//Setup animation and update it over time
 	Ogre::SkeletonAnimation* animation = nullptr;
+	Ogre::SceneNode* blobNode = nullptr;
 	// Find a node that contains an item that contains an skeleton
 	auto childIt = objectNode->getChildIterator();
 
@@ -97,6 +99,12 @@ int main()
 		auto sceneNode = static_cast<Ogre::SceneNode*>(childIt.getNext());
 		if(sceneNode->numAttachedObjects() == 0)
 			continue;
+
+		if(sceneNode->getName() == "Icosphere")
+		{
+			blobNode = sceneNode;
+			continue;
+		}
 
 		auto itemIt = sceneNode->getAttachedObjectIterator();
 
@@ -111,6 +119,17 @@ int main()
 				animation = item->getSkeletonInstance()->getAnimation(animationName);
 				animation->setEnabled(true);
 				animation->setLoop(true);
+
+				// Look for the blob object in the bones tag points
+				for(size_t i = 0; i < skeleton->getNumBones(); ++i)
+				{
+					auto bone = skeleton->getBone(i);
+					if(bone->getNumTagPoints())
+					{
+						blobNode = bone->getTagPoint(0);
+						break;
+					}
+				}
 				break;
 			}
 		}
@@ -126,6 +145,13 @@ int main()
 		auto dt = (now - last) / 1000.0f;
 		accumulator += dt;
 		last = now;
+
+		auto blobItem = static_cast<Ogre::Item*>(blobNode->getAttachedObject(0));
+        auto subItem = blobItem->getSubItem( 0 );
+        for( int i = 0; i < subItem->getNumPoses(); ++i )
+        {
+            subItem->setPoseWeight(i, (Ogre::Math::Sin(accumulator * (1 + i * 0.1) * 7 + i) + 1) * 0.5 );
+        }
 
 		animation->addTime(dt);
         camera->setPosition(6.f + Ogre::Math::Sin(accumulator) * 4.5f, 0, 0);
