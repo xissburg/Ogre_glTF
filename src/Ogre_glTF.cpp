@@ -76,7 +76,7 @@ Ogre::SceneNode* loaderAdapter::getFirstSceneNode(Ogre::SceneManager* smgr) cons
 {
 	if(!isOk())
 		return nullptr;
-	
+
 	pimpl->textureImp.loadTextures();
 	return getSceneNode(pimpl->model.scenes[0].nodes[0], smgr->getRootSceneNode(), smgr);
 }
@@ -97,7 +97,7 @@ Ogre::SceneNode* loaderAdapter::getSceneNode(size_t index, Ogre::SceneNode* pare
 
 	auto sceneNode = parentSceneNode->createChildSceneNode();
 	sceneNode->setName(node.name);
-	
+
 	if(!node.translation.empty())
 		sceneNode->setPosition(node.translation[0], node.translation[1], node.translation[2]);
 
@@ -136,8 +136,8 @@ Ogre::SceneNode* loaderAdapter::getSceneNode(size_t index, Ogre::SceneNode* pare
 
 		auto item = smgr->createItem(ogreMesh);
 		const auto& mesh = pimpl->model.meshes[node.mesh];
-		for(size_t i = 0; i < mesh.primitives.size(); ++i) 
-		{ 
+		for(size_t i = 0; i < mesh.primitives.size(); ++i)
+		{
 			auto subItem = item->getSubItem(i);
 			subItem->setDatablock(getDatablock(mesh.primitives[i].material));
 			if(!mesh.weights.empty())
@@ -153,7 +153,7 @@ Ogre::SceneNode* loaderAdapter::getSceneNode(size_t index, Ogre::SceneNode* pare
 		{
 			// Find all root bones. Collect all children of all nodes in the skin and then find
 			// all nodes in the skin that are not in the set of children. Those are all nodes
-			// that don't have a parent because they're not a child of any other node. 
+			// that don't have a parent because they're not a child of any other node.
 			std::vector<int> rootBones;
 			std::vector<int> allChildren;
 			const auto& skin = pimpl->model.skins[node.skin];
@@ -202,7 +202,7 @@ void loaderAdapter::createTagPoints(int boneIndex, Ogre::SkeletonInstance* skele
 			Ogre::Vector3 position;
 			Ogre::Quaternion orientation;
 			Ogre::Vector3 scale(1);
-			
+
 			if(!childNode.translation.empty())
 				position = Ogre::Vector3(childNode.translation[0], childNode.translation[1], childNode.translation[2]);
 
@@ -237,8 +237,8 @@ void loaderAdapter::createTagPoints(int boneIndex, Ogre::SkeletonInstance* skele
 
 			auto item = smgr->createItem(ogreMesh);
 			const auto& mesh = pimpl->model.meshes[childNode.mesh];
-			for(size_t i = 0; i < mesh.primitives.size(); ++i) 
-			{ 
+			for(size_t i = 0; i < mesh.primitives.size(); ++i)
+			{
 				auto subItem = item->getSubItem(i);
 				subItem->setDatablock(getDatablock(mesh.primitives[i].material));
 				if(!mesh.weights.empty())
