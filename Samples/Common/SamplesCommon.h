@@ -19,6 +19,13 @@
 //The library we are trying out in this program
 #include <Ogre_glTF.hpp>
 
+//If the generated Ogre_glTF library does not include tinygltf symbols, 
+// include the tinygltf header here and the symbols will be defined. In this
+// case, the TINYGLTF_IMPLEMENTATION is set via CMake.
+#ifndef Ogre_glTF_TINYGLTF_IMPLEMENTATION
+#include <tiny_gltf.h>
+#endif
+
 #ifdef _DEBUG
 const char GL_RENDER_PLUGIN[] = "RenderSystem_GL3Plus_d";
 #else

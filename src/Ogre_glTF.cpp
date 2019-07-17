@@ -9,9 +9,11 @@
 #include "Ogre_glTF_OgreResource.hpp"
 #include "Ogre_glTF_internal_utils.hpp"
 
-#define TINYGLTF_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
+#ifdef Ogre_glTF_TINYGLTF_IMPLEMENTATION
+	#define TINYGLTF_IMPLEMENTATION
+	#define STB_IMAGE_IMPLEMENTATION
+	#define STB_IMAGE_WRITE_IMPLEMENTATION
+#endif
 #include "tiny_gltf.h"
 
 #include <OgreItem.h>

@@ -7,14 +7,19 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_INSTALL_PREFIX "./output")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG=1 -D_DEBUG=1") 
-
-if(NOT CMAKE_DEBUG_POSTFIX)
-  set(CMAKE_DEBUG_POSTFIX "_d")
-endif()
+set(CMAKE_DEBUG_POSTFIX "_d")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
 
 include(Ogre_glTF_ConfigTargets)
+
+option(Ogre_glTF_TinyGLTF_implementation 
+	   "Set to FALSE to not include Tiny glTF implementation if you're going to link to it externally." 
+	   TRUE)
+
+if (Ogre_glTF_TinyGLTF_implementation)
+  add_definitions(-DOgre_glTF_TINYGLTF_IMPLEMENTATION)
+endif ()
 
 option(Ogre_glTF_STATIC "Static build" FALSE)
 
