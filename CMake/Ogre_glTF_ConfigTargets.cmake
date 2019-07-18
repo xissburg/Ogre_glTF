@@ -4,11 +4,10 @@ function(Ogre_glTF_config_sample PROJECTNAME)
     add_executable(${PROJECTNAME} WIN32 MACOSX_BUNDLE ${SAMPLES_COMMON_HEADER_FILES} ${SAMPLES_COMMON_SOURCE_FILES} ${SOURCES})
     add_dependencies(${PROJECTNAME} Ogre_glTF)
 
-    #if (NOT Ogre_glTF_TinyGLTF_implementation)
-    target_compile_definitions( ${PROJECTNAME} PUBLIC TINYGLTF_IMPLEMENTATION STB_IMAGE_IMPLEMENTATION STB_IMAGE_WRITE_IMPLEMENTATION)
-    #endif ()
-    #set_target_properties( ${PROJECTNAME} PROPERTIES COMPILE_DEFINITIONS "TINYGLTF_IMPLEMENTATION STB_IMAGE_IMPLEMENTATION STB_IMAGE_WRITE_IMPLEMENTATION")
-
+    if (NOT Ogre_glTF_TinyGLTF_implementation)
+        target_compile_definitions( ${PROJECTNAME} PUBLIC TINYGLTF_IMPLEMENTATION STB_IMAGE_IMPLEMENTATION STB_IMAGE_WRITE_IMPLEMENTATION)
+    endif ()
+    
     target_include_directories( ${PROJECTNAME} PUBLIC
         #Ogre and the physics based high level material system
         ${OGRE_INCLUDE_DIRS}
