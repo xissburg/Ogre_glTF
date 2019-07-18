@@ -228,7 +228,7 @@ Ogre::MeshPtr modelConverter::getOgreMesh(const std::vector<int>& indices, const
 						const auto& accessor = model.accessors[positionIter->second];
 						const auto& bufferView = model.bufferViews[accessor.bufferView];
 						const auto& buffer = model.buffers[bufferView.buffer];
-						const auto& data = &buffer.data[bufferView.byteOffset];
+						const auto& data = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
 						positionData.push_back(reinterpret_cast<const float*>(data));
 						numVertices = accessor.count;
 					}
@@ -239,7 +239,7 @@ Ogre::MeshPtr modelConverter::getOgreMesh(const std::vector<int>& indices, const
 						const auto& accessor = model.accessors[normalIter->second];
 						const auto& bufferView = model.bufferViews[accessor.bufferView];
 						const auto& buffer = model.buffers[bufferView.buffer];
-						const auto& data = &buffer.data[bufferView.byteOffset];
+						const auto& data = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
 						normalData.push_back(reinterpret_cast<const float*>(data));
 					}
 
